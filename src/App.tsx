@@ -15,13 +15,23 @@ import { ServicesPage } from '@/modules/services/ServicesPage';
 import { ReportsPage } from '@/modules/reports/ReportsPage';
 import { AdminPage } from '@/modules/admin/AdminPage';
 import { SettingsPage } from '@/modules/settings/SettingsPage';
-import { useStore } from '@/hooks/useStore';
-import { useState } from 'react';
-import { toast } from 'sonner';
+import { LoginPage } from '@/modules/auth/LoginPage';
+import { RegisterPage } from '@/modules/auth/RegisterPage';
+import { useAuth } from '@/hooks';
+import { Loader2 } from 'lucide-react';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useStore();
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return user ? <>{children}</> : <Navigate to="/login" />;
 }
 
 function App() {
@@ -29,6 +39,11 @@ function App() {
     <BrowserRouter>
       <Toaster position="top-right" richColors />
       <Routes>
+        {/* Auth Routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+
+        {/* Protected Routes */}
         <Route path="/" element={
           <PrivateRoute>
             <MainLayout />
@@ -49,73 +64,12 @@ function App() {
           <Route path="admin" element={<AdminPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
-        <Route path="/login" element={<LoginPage />} />
+
+        {/* Catch all - redirect to home */}
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
   );
 }
 
 export default App;
-
-function LoginPage() {
-  const { login, isAuthenticated } = useStore();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-
-  if (isAuthenticated) {
-    return <Navigate to="/" />;
-  }
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    const success = login(username, password);
-    if (!success) {
-      toast.error('Đăng nhập thất bại');
-    }
-  };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
-      <div className="w-full max-w-md p-8 bg-card rounded-2xl shadow-xl border">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center mx-auto mb-4">
-            <span className="text-primary-foreground font-bold text-2xl">DC</span>
-          </div>
-          <h1 className="text-2xl font-bold">DentalCare CRM</h1>
-          <p className="text-muted-foreground">Đăng nhập để tiếp tục</p>
-        </div>
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium">Tên đăng nhập</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full h-10 px-3 mt-1 rounded-md border border-input bg-background"
-              placeholder="Nhập tên đăng nhập"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Mật khẩu</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full h-10 px-3 mt-1 rounded-md border border-input bg-background"
-              placeholder="Nhập mật khẩu"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full h-10 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 transition-colors"
-          >
-            Đăng nhập
-          </button>
-        </form>
-        <div className="mt-6 text-center text-sm text-muted-foreground">
-          <p>Tài khoản demo: admin / password</p>
-        </div>
-      </div>
-    </div>
-  );
-}
